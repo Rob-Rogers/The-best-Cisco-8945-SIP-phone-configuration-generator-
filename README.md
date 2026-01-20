@@ -2,6 +2,12 @@ The-best-Cisco-8945-SIP-phone-configuration-generator-
 A full-screen, ncurses-based provisioning tool for generating SEP<MAC>.cnf.xml files for Cisco 8945 IP Phones running SIP firmware.
 Built for VoIP admins, lab environments, and homelabs who want a fast, visual, and reliable way to provision Cisco phones without CUCM.
 
+![App Screenshot](example.png)
+
+Pre-compiled binarys below !.
+* [Download Windows Version (.exe)](cisco_config_generator.exe)
+* [Download Linux Version (.bin)](cisco_config_generator.bin)
+
 FEATURES
 Full-screen TUI (Text User Interface) using ncurses
 Generates valid SEP<MAC>.cnf.xml provisioning files
