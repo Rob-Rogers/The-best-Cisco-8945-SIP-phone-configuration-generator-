@@ -4,7 +4,7 @@ Built for VoIP admins, lab environments, and homelabs who want a fast, visual, a
 
 ![App Screenshot](example.png)
 
-Pre-compiled binarys below !.
+Pre-compiled binarys below !
 * [Download Windows Version (.exe)](cisco_config_generator.exe)
 * [Download Linux Version (.bin)](cisco_config_generator.bin)
 
