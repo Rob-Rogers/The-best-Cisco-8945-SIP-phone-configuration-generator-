@@ -14,6 +14,9 @@
  * COMPILATION:
  *  Linux/Mac: gcc -o cisco_gen CISCO8945-phone.c -lncurses
  *
+ * Q to Quit
+ * S to save
+ * give old config as argument for editing a config
  * ======================================================================================
  */
 
@@ -786,6 +789,15 @@ void init_fields() {
   update_visibility();
 }
 
+const char *get_lang_code(const char *locale) {
+  if (strcmp(locale, "United_States") == 0) return "en_US";
+  if (strcmp(locale, "United_Kingdom") == 0) return "en_GB";
+  if (strcmp(locale, "France") == 0) return "fr_FR";
+  if (strcmp(locale, "Germany") == 0) return "de_DE";
+  if (strcmp(locale, "Spain") == 0) return "es_ES";
+  return "en_US";
+}
+
 /*
  * FUNCTION: save_xml
  * purpose:  Generates the actual SEP<MAC>.cnf.xml file.
@@ -818,59 +830,72 @@ void save_xml() {
   if (load[0])
     fprintf(fp, "  <loadInformation>%s</loadInformation>\n", load);
 
+  // Device Pool wraps dateTimeSetting and callManagerGroup
+  fprintf(fp, "  <devicePool>\n");
+
+  // Date/Time
+  fprintf(fp, "    <dateTimeSetting>\n");
+  char *ntp = val("ntpServer");
+  if (ntp[0]) {
+    fprintf(fp, "      <ntps>\n");
+    fprintf(fp, "        <ntp>\n");
+    fprintf(fp, "          <name>%s</name>\n", ntp);
+    fprintf(fp, "          <ntpMode>Unicast</ntpMode>\n");
+    fprintf(fp, "        </ntp>\n");
+    fprintf(fp, "      </ntps>\n");
+  }
+  fprintf(fp, "      <timeZone>%s</timeZone>\n", opt_val("timeZone"));
+  char *df = opt_val("dateTemplate");
+  if (df[0])
+    fprintf(fp, "      <dateTemplate>%s</dateTemplate>\n", df);
+  char *tf = opt_val("timeFormat");
+  if (tf[0])
+    fprintf(fp, "      <timeFormat>%s</timeFormat>\n", tf);
+  fprintf(fp, "    </dateTimeSetting>\n");
+
   // Call Manager Group
-  fprintf(fp, "  <callManagerGroup>\n    <members>\n");
+  fprintf(fp, "    <callManagerGroup>\n      <members>\n");
   char *port = val("voipControlPort");
   if (!port[0])
     port = "5060";
 
   // Primary
-  fprintf(fp, "      <member priority=\"0\">\n        <callManager>\n");
-  fprintf(fp,
-          "          <ports>\n            "
-          "<ethernetPhonePort>%s</ethernetPhonePort>\n          </ports>\n",
-          port);
-  fprintf(fp, "          <processNodeName>%s</processNodeName>\n",
+  fprintf(fp, "        <member priority=\"0\">\n          <callManager>\n");
+  fprintf(fp, "            <ports>\n");
+  fprintf(fp, "              <ethernetPhonePort>2000</ethernetPhonePort>\n");
+  fprintf(fp, "              <sipPort>%s</sipPort>\n", port);
+  fprintf(fp, "              <securedSipPort>5061</securedSipPort>\n");
+  fprintf(fp, "            </ports>\n");
+  fprintf(fp, "            <processNodeName>%s</processNodeName>\n",
           val("processNodeName1"));
-  fprintf(fp, "        </callManager>\n      </member>\n");
+  fprintf(fp, "          </callManager>\n        </member>\n");
 
   // Secondary
   char *s_pbx = val("processNodeName2");
   if (s_pbx[0]) {
-    fprintf(fp, "      <member priority=\"1\">\n        <callManager>\n");
-    fprintf(fp,
-            "          <ports>\n            "
-            "<ethernetPhonePort>%s</ethernetPhonePort>\n          </ports>\n",
-            port);
-    fprintf(fp, "          <processNodeName>%s</processNodeName>\n", s_pbx);
-    fprintf(fp, "        </callManager>\n      </member>\n");
+    fprintf(fp, "        <member priority=\"1\">\n          <callManager>\n");
+    fprintf(fp, "            <ports>\n");
+    fprintf(fp, "              <ethernetPhonePort>2000</ethernetPhonePort>\n");
+    fprintf(fp, "              <sipPort>%s</sipPort>\n", port);
+    fprintf(fp, "              <securedSipPort>5061</securedSipPort>\n");
+    fprintf(fp, "            </ports>\n");
+    fprintf(fp, "            <processNodeName>%s</processNodeName>\n", s_pbx);
+    fprintf(fp, "          </callManager>\n        </member>\n");
   }
   // Tertiary
   char *t_pbx = val("processNodeName3");
   if (t_pbx[0]) {
-    fprintf(fp, "      <member priority=\"2\">\n        <callManager>\n");
-    fprintf(fp,
-            "          <ports>\n            "
-            "<ethernetPhonePort>%s</ethernetPhonePort>\n          </ports>\n",
-            port);
-    fprintf(fp, "          <processNodeName>%s</processNodeName>\n", t_pbx);
-    fprintf(fp, "        </callManager>\n      </member>\n");
+    fprintf(fp, "        <member priority=\"2\">\n          <callManager>\n");
+    fprintf(fp, "            <ports>\n");
+    fprintf(fp, "              <ethernetPhonePort>2000</ethernetPhonePort>\n");
+    fprintf(fp, "              <sipPort>%s</sipPort>\n", port);
+    fprintf(fp, "              <securedSipPort>5061</securedSipPort>\n");
+    fprintf(fp, "            </ports>\n");
+    fprintf(fp, "            <processNodeName>%s</processNodeName>\n", t_pbx);
+    fprintf(fp, "          </callManager>\n        </member>\n");
   }
-  fprintf(fp, "    </members>\n  </callManagerGroup>\n");
-
-  // Date/Time
-  fprintf(fp, "  <dateTimeSetting>\n");
-  char *ntp = val("ntpServerAddr");
-  if (ntp[0])
-    fprintf(fp, "    <ntpServerAddr>%s</ntpServerAddr>\n", ntp);
-  fprintf(fp, "    <timeZone>%s</timeZone>\n", opt_val("timeZone"));
-  char *df = opt_val("dateTemplate");
-  if (df[0])
-    fprintf(fp, "    <dateTemplate>%s</dateTemplate>\n", df);
-  char *tf = opt_val("timeFormat");
-  if (tf[0])
-    fprintf(fp, "    <timeFormat>%s</timeFormat>\n", tf);
-  fprintf(fp, "  </dateTimeSetting>\n");
+  fprintf(fp, "      </members>\n    </callManagerGroup>\n");
+  fprintf(fp, "  </devicePool>\n");
 
   // SIP Stack
   fprintf(fp, "  <sipStack>\n");
@@ -885,10 +910,11 @@ void save_xml() {
   fprintf(fp, "  </sipStack>\n");
 
   // Locales
+  const char *ul = opt_val("userLocale");
   fprintf(fp,
           "  <userLocale>\n    <name>%s</name>\n    <langCode>%s</langCode>\n  "
           "</userLocale>\n",
-          opt_val("userLocale"), opt_val("userLocale"));
+          ul, get_lang_code(ul));
   fprintf(fp, "  <networkLocale>%s</networkLocale>\n",
           opt_val("networkLocale"));
 
@@ -904,38 +930,48 @@ void save_xml() {
 
   // SIP Lines Loop (Still simplified iteration, but safer lookups)
   fprintf(fp, "  <sipLines>\n");
+  int button_num = 1;
+  int line_idx = 1;
   for (int i = 0; i < total_fields; i++) {
-    if (strstr(fields[i].label, "Key Function") && fields[i].opt_sel > 0) {
-      int b = fields[i].label[1] - '0';
-      // Next fields are sequential to Key Function in init_fields, so relative
-      // index is OK for specific line block
-      fprintf(fp, "    <line button=\"%d\">\n      <featureID>%s</featureID>\n",
-              b, (fields[i].opt_sel == 1 ? "9" : "21"));
-      fprintf(fp,
-              "      <name>%s</name>\n      <displayName>%s</displayName>\n",
-              fields[i + 1].value, fields[i + 2].value);
-
-      if (fields[i].opt_sel == 1) { // Line
-        fprintf(fp,
-                "      <authName>%s</authName>\n      "
-                "<authPassword>%s</authPassword>\n",
-                fields[i + 3].value, fields[i + 4].value);
-        if (fields[i + 5].opt_sel == 1)
-          fprintf(fp, "      <autoAnswerEnabled>2</autoAnswerEnabled>\n      "
-                      "<autoAnswerTimer>1</autoAnswerTimer>\n");
-        if (fields[i + 6].value[0])
-          fprintf(fp, "      <callForwardURI>%s</callForwardURI>\n",
-                  fields[i + 6].value);
-        if (fields[i + 7].value[0])
-          fprintf(fp, "      <callPickupGroupURI>%s</callPickupGroupURI>\n",
-                  fields[i + 7].value);
-
-        // New Voicemail
-        char *vm = val("voiceMailPilot");
-        if (vm[0])
-          fprintf(fp, "      <voiceMailPilot>%s</voiceMailPilot>\n", vm);
+    if (strcmp(fields[i].xml, "lineType") == 0) {
+      if (fields[i].opt_sel > 0) {
+        if (fields[i].opt_sel == 1) { // Line
+          fprintf(fp, "    <line button=\"%d\" lineIndex=\"%d\">\n", button_num, line_idx++);
+          fprintf(fp, "      <featureID>9</featureID>\n");
+          fprintf(fp, "      <featureLabel>%s</featureLabel>\n", fields[i + 2].value);
+          fprintf(fp, "      <proxy>%s</proxy>\n", val("processNodeName1"));
+          fprintf(fp, "      <port>%s</port>\n", port);
+          fprintf(fp, "      <name>%s</name>\n", fields[i + 1].value);
+          fprintf(fp, "      <displayName>%s</displayName>\n", fields[i + 2].value);
+          fprintf(fp, "      <authName>%s</authName>\n", fields[i + 3].value);
+          fprintf(fp, "      <authPassword>%s</authPassword>\n", fields[i + 4].value);
+          fprintf(fp, "      <sharedLine>false</sharedLine>\n");
+          fprintf(fp, "      <messageWaitingLampPolicy>3</messageWaitingLampPolicy>\n");
+          if (fields[i + 5].opt_sel == 1) {
+            fprintf(fp, "      <autoAnswer>\n        <autoAnswerEnabled>2</autoAnswerEnabled>\n      </autoAnswer>\n");
+            fprintf(fp, "      <autoAnswerTimer>1</autoAnswerTimer>\n");
+          }
+          if (fields[i + 6].value[0])
+            fprintf(fp, "      <callForwardURI>%s</callForwardURI>\n", fields[i + 6].value);
+          if (fields[i + 7].value[0])
+            fprintf(fp, "      <callPickupGroupURI>%s</callPickupGroupURI>\n", fields[i + 7].value);
+          if (fields[i + 8].value[0])
+            fprintf(fp, "      <messagesNumber>%s</messagesNumber>\n", fields[i + 8].value);
+        } else if (fields[i].opt_sel == 2) { // SpeedDial
+          fprintf(fp, "    <line button=\"%d\">\n", button_num);
+          fprintf(fp, "      <featureID>21</featureID>\n");
+          fprintf(fp, "      <featureLabel>%s</featureLabel>\n", fields[i + 2].value);
+          fprintf(fp, "      <speedDialNumber>%s</speedDialNumber>\n", fields[i + 1].value);
+        } else if (fields[i].opt_sel == 3) { // BLF
+          fprintf(fp, "    <line button=\"%d\">\n", button_num);
+          fprintf(fp, "      <featureID>21</featureID>\n");
+          fprintf(fp, "      <featureLabel>%s</featureLabel>\n", fields[i + 2].value);
+          fprintf(fp, "      <speedDialNumber>%s</speedDialNumber>\n", fields[i + 1].value);
+          fprintf(fp, "      <featureOptionMask>1</featureOptionMask>\n");
+        }
+        fprintf(fp, "    </line>\n");
       }
-      fprintf(fp, "    </line>\n");
+      button_num++;
     }
   }
   fprintf(fp, "  </sipLines>\n");
