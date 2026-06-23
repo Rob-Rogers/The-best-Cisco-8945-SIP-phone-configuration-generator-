@@ -69,6 +69,10 @@ Put the file in your TFTP or HTTP server root
 Set DHCP Option 66 to your server IP
 Reboot the phone
 
+
+NEW FEATURE
+If you run cisco_config_generator.bin SEPXXXXXXXXXXXX.cnf.xml it will import your old config
+
 NOTES
 This tool is designed for Cisco 8945 SIP firmware, not SCCP.
 You must already have the correct SIP firmware on your TFTP or HTTP server.
